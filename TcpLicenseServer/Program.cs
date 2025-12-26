@@ -1,5 +1,6 @@
 ﻿
 using TcpLicenseServer;
+using TcpLicenseServer.Data;
 
 var commandFactory = new CommandFactory();
 
@@ -17,6 +18,9 @@ Console.CancelKeyPress += (s, e) =>
 
 try
 {
+    await using var dbContext = new AppDbContext();
+    await dbContext.Database.EnsureCreatedAsync();
+
     await server.StartAsync(cts.Token);
 }
 finally

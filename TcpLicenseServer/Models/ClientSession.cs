@@ -18,10 +18,4 @@ public class ClientSession(TcpClient client)
 
         await Stream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
     }
-
-    public ValueTask DisposeAsync()
-    {
-        Client.Dispose();
-        return ValueTask.CompletedTask;
-    }
 }

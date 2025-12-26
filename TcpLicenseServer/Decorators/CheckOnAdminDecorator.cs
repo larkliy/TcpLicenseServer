@@ -3,13 +3,13 @@ using TcpLicenseServer.Models;
 
 namespace TcpLicenseServer.Decorators;
 
-public class AuthGuardDecorator(ICommand innerCommand) : ICommand
+public class CheckOnAdminDecorator(ICommand innerCommand) : ICommand
 {
     public async ValueTask ExecuteAsync(ClientSession session, string[] args, CancellationToken ct)
     {
-        if (!session.IsAuthenticated)
+        if (session.Role != "Admin")
         {
-            await session.SendAsync("ERROR 401. Unauthorized.", ct);
+            await session.SendAsync("ERROR: You do not have permission to execute this command.", ct);
             return;
         }
 

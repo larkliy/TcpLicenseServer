@@ -1,6 +1,8 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
+using TcpLicenseServer.Attributes;
 using TcpLicenseServer.Commands;
 using TcpLicenseServer.Models;
 
@@ -28,11 +30,11 @@ public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposa
         }
         catch (OperationCanceledException)
         {
-            Console.WriteLine("Операция была отменена!");
+            Console.WriteLine("The operation was cancelled!");
         }
         catch (SocketException ex)
         {
-            Console.WriteLine($"Критическая ошибка сокета: {ex}");
+            Console.WriteLine($"Critical socket error: {ex}");
             throw;
         }
         finally
@@ -46,7 +48,7 @@ public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposa
         using var clientCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         clientCts.CancelAfter(TimeSpan.FromSeconds(10));
 
-        await using var session = new ClientSession(client);
+        var session = new ClientSession(client);
         using var reader = new StreamReader(session.Stream, Encoding.UTF8, leaveOpen: true);
 
         using var _ = client;
@@ -76,7 +78,7 @@ public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposa
         catch (IOException) { }
         finally
         {
-            Console.WriteLine("Клиент задисконекчен!");
+            Console.WriteLine("The client has been disconnected.");
         }
     }
 
