@@ -15,7 +15,7 @@ public class LoginCommand : ICommand
         string key = args[0];
         string hwid = args[1];
 
-        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Key == key, ct);
+        var user = await dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Key == key, ct).ConfigureAwait(false);
 
         if (user == null)
         {
@@ -33,7 +33,7 @@ public class LoginCommand : ICommand
             await AuthenticateSessionAsync(session, user, ct);
         }
 
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     private static async Task<bool> ValidateLoginArgsAsync(ClientSession session, string[] args, CancellationToken ct)

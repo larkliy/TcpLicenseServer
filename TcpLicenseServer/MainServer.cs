@@ -1,8 +1,5 @@
-﻿using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
+﻿using System.Net.Sockets;
 using System.Text;
-using TcpLicenseServer.Attributes;
 using TcpLicenseServer.Commands;
 using TcpLicenseServer.Models;
 
@@ -14,16 +11,14 @@ public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposa
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        _listener = new TcpListener(IPAddress.Any, port);
-
+        _listener = TcpListener.Create(port);
         _listener.Start();
 
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                TcpClient client = await _listener.AcceptTcpClientAsync(cancellationToken)
-                    .ConfigureAwait(false);
+                var client = await _listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
 
                 _ = ProcessClientAsync(client, cancellationToken);
             }
@@ -43,11 +38,8 @@ public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposa
         }
     }
 
-    private async Task ProcessClientAsync(TcpClient client, CancellationToken cancellationToken)
+    private async Task ProcessClientAsync(TcpClient client, CancellationToken ct)
     {
-        using var clientCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        clientCts.CancelAfter(TimeSpan.FromSeconds(10));
-
         var session = new ClientSession(client);
         using var reader = new StreamReader(session.Stream, Encoding.UTF8, leaveOpen: true);
 
@@ -56,10 +48,10 @@ public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposa
 
         try
         {
-            await session.SendAsync("WELCOME: Service v1.0. Type 'LOGIN admin secret123'", clientCts.Token);
+            await session.SendAsync("WELCOME: Service v1.0. Type 'LOGIN admin secret123'.", ct);
 
             string? line;
-            while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+            while ((line = await reader.ReadLineAsync(ct).ConfigureAwait(false)) != null)
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
@@ -70,7 +62,7 @@ public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposa
 
                 if (commandFactory.GetCommand(cmdName) is not null and ICommand command)
                 {
-                    await command.ExecuteAsync(session, args, cancellationToken).ConfigureAwait(false);
+                    await command.ExecuteAsync(session, args, ct).ConfigureAwait(false);
                 }
             }
         }

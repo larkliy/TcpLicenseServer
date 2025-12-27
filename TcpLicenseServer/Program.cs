@@ -13,7 +13,7 @@ Console.CancelKeyPress += (s, e) =>
     e.Cancel = true;
     cts.Cancel();
 
-    Console.WriteLine("Сервер остановлен!");
+    Console.WriteLine("The server has stopped!");
 };
 
 try
