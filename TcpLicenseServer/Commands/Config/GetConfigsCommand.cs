@@ -2,9 +2,10 @@
 using Serilog;
 using System.Text.Json;
 using TcpLicenseServer.Data;
+using TcpLicenseServer.Extensions;
 using TcpLicenseServer.Models;
 
-namespace TcpLicenseServer.Commands;
+namespace TcpLicenseServer.Commands.Config;
 
 public class GetConfigsCommand : ICommand
 {
@@ -19,12 +20,12 @@ public class GetConfigsCommand : ICommand
                 .ToListAsync(ct)
                 .ConfigureAwait(false);
 
-            await session.SendAsync($"OK: {JsonSerializer.Serialize(configs)}", ct);
+            await session.ReplyJsonAsync(configs, ct);
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error receiving configs.");
-            await session.SendAsync("ERROR: Internal error while trying to get list of configs.", ct);
+            await session.ReplyErrorAsync("Internal error while trying to get list of configs.", ct);
         }
     }
 }

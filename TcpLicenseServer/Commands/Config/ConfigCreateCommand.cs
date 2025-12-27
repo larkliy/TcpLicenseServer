@@ -1,27 +1,25 @@
 ﻿using Serilog;
 using TcpLicenseServer.Data;
+using TcpLicenseServer.Extensions;
 using TcpLicenseServer.Models;
 
-namespace TcpLicenseServer.Commands;
+namespace TcpLicenseServer.Commands.Config;
 
 public class ConfigCreateCommand : ICommand
 {
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
-        if (args.Length < 2)
-        {
-            await session.SendAsync("ERROR: Too few arguments.", ct);
-            return;
-        }
-
-        string configName = args[0];
-        string configValue = args[1];
+        var commandArgs = new CommandArgs(args);
 
         try
         {
+            commandArgs.EnsureCount(2);
+            string configName = commandArgs.PopString();
+            string configValue = commandArgs.RemainingText;
+
             await using var dbContext = new AppDbContext();
 
-            var config = new Config
+            var config = new Models.Config
             {
                 Name = configName,
                 JsonConfig = configValue,
@@ -32,12 +30,12 @@ public class ConfigCreateCommand : ICommand
             await dbContext.Configs.AddAsync(config, ct).ConfigureAwait(false);
             await dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
 
-            await session.SendAsync($"SUCCESS: Config {configName} created.", ct);
+            await session.ReplySuccessAsync($"Config {configName} created.", ct);
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error creating a config.");
-            await session.SendAsync("ERROR: Internal server error during a config creating.", ct);
+            await session.ReplyErrorAsync("Internal server error during a config creating.", ct);
         }
     }
 }

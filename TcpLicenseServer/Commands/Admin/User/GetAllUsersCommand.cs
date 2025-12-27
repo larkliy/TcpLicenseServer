@@ -1,29 +1,26 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Serilog;
-using System.Text.Json;
+using TcpLicenseServer.Extensions;
+using TcpLicenseServer.Attributes;
 using TcpLicenseServer.Data;
 using TcpLicenseServer.Models;
 
 namespace TcpLicenseServer.Commands.Admin.User;
 
-public class GetAllUserCommand : ICommand
+[AdminOnly]
+public class GetAllUsersCommand : ICommand
 {
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
-        if (args.Length > 2)
-        {
-            await session.SendAsync("ERROR: Too few arguments.", ct);
-            return;
-        }
-
-        int pageNumber = int.Parse(args[0]);
-        int pageSize = int.Parse(args[1]);
-
-        if (pageNumber <= 0) pageNumber = 1;
-        if (pageSize <= 0) pageSize = 10;
+        var commandArgs = new CommandArgs(args);
 
         try
         {
+            int pageNumber = commandArgs.HasNext() ? commandArgs.PopInt() : 1;
+            int pageSize = commandArgs.HasNext() ? commandArgs.PopInt() : 10;
+
+            if (pageNumber < 1) pageNumber = 1;
+
             await using var dbContext = new AppDbContext();
 
             var users = await dbContext.Users
@@ -34,12 +31,12 @@ public class GetAllUserCommand : ICommand
                 .ToListAsync(ct)
                 .ConfigureAwait(false);
 
-            await session.SendAsync($"OK: {JsonSerializer.Serialize(users)}", ct);
+            await session.ReplyJsonAsync(users, ct);
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting information about all users.");
-            await session.SendAsync("ERROR: Internal error retrieving information about all users.", ct);
+            await session.ReplyErrorAsync("Internal error retrieving information about all users.", ct);
         }
     }
 }

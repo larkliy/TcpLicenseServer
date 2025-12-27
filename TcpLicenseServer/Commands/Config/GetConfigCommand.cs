@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Serilog;
 using TcpLicenseServer.Data;
+using TcpLicenseServer.Extensions;
 using TcpLicenseServer.Models;
 
-namespace TcpLicenseServer.Commands;
+namespace TcpLicenseServer.Commands.Config;
 
 public class GetConfigCommand : ICommand
 {
@@ -12,15 +13,12 @@ public class GetConfigCommand : ICommand
                                         string[] args,
                                         CancellationToken ct)
     {
-        if (args.Length < 1)
-        {
-            await session.SendAsync("ERROR: Too few arguments.", ct);
-            return;
-        }
+        var commandArgs = new CommandArgs(args);
 
         try
         {
-            string configName = args[0];
+            commandArgs.EnsureCount(1);
+            string configName = commandArgs.PopString();
 
             await using var dbContext = new AppDbContext();
 
@@ -31,16 +29,16 @@ public class GetConfigCommand : ICommand
 
             if (config == null)
             {
-                await session.SendAsync("ERROR: Config not found.", ct);
+                await session.ReplyErrorAsync("Config not found.", ct);
                 return;
             }
 
-            await session.SendAsync($"SUCCESS: {config.JsonConfig}", ct);
+            await session.ReplySuccessAsync(config.JsonConfig, ct);
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting config '{ConfigName}' for user {UserKey}", args[0], session.Userkey);
-            await session.SendAsync("ERROR: Internal server error while fetching config.", ct);
+            await session.ReplyErrorAsync("Internal server error while fetching config.", ct);
         }
     }
 }
