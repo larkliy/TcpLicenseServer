@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Serilog;
 using TcpLicenseServer.Data;
 using TcpLicenseServer.Models;
 
@@ -13,31 +14,43 @@ public class LoginCommand : ICommand
     {
         if (!await ValidateLoginArgsAsync(session, args, ct)) return;
 
-        await using var dbContext = new AppDbContext();
-
-        string key = args[0];
-        string hwid = args[1];
-
-        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Key == key, ct).ConfigureAwait(false);
-
-        if (user == null)
+        try
         {
-            await session.SendAsync("ERROR: User does not exist.", ct);
-            return;
-        }
+            await using var dbContext = new AppDbContext();
 
-        if (hwid != user.Hwid && user.Hwid is not null)
-        {
-            await session.SendAsync("ERROR: Hwid does not match.", ct);
-            return;
-        }
-        else
-        {
-            user.Hwid ??= user.Hwid;
+            string key = args[0];
+            string hwid = args[1];
+
+            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Key == key, ct).ConfigureAwait(false);
+
+            if (user == null)
+            {
+                await session.SendAsync("ERROR: User does not exist.", ct);
+                return;
+            }
+
+            if (hwid != user.Hwid && user.Hwid is not null)
+            {
+                await session.SendAsync("ERROR: Hwid does not match.", ct);
+                return;
+            }
+            
+            if (user.SubscriptionEndDate <= DateTime.UtcNow)
+            {
+                 await session.SendAsync($"ERROR: Subscription expired. Expiration date: {user.SubscriptionEndDate}", ct);
+                 return;
+            }
+
+            user.Hwid ??= hwid;
             await AuthenticateSessionAsync(sessionRegistry, session, user, ct);
+            
+            await dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
         }
-
-        await dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Login failed for key: {Key}", args.Length > 0 ? args[0] : "unknown");
+            await session.SendAsync("ERROR: Internal server error during login.", ct);
+        }
     }
 
     private static async Task<bool> ValidateLoginArgsAsync(ClientSession session, string[] args, CancellationToken ct)
@@ -64,7 +77,7 @@ public class LoginCommand : ICommand
     {
         clientSession.UserId = user.Id;
         clientSession.IsAuthenticated = true;
-        clientSession.Role = "Player";
+        clientSession.Role = user.Role;
         clientSession.Userkey = user.Key;
 
         if (sessionRegistry.TryGet(clientSession.Userkey, out var existing))

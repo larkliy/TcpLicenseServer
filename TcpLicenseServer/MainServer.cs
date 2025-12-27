@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+﻿using Serilog;
 using System.Net.Sockets;
 using System.Text;
 using TcpLicenseServer.Commands;
@@ -38,11 +38,11 @@ public class MainServer : IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
-            Console.WriteLine("The operation was cancelled!");
+            Log.Information("The operation was cancelled!");
         }
         catch (SocketException ex)
         {
-            Console.WriteLine($"Critical socket error: {ex}");
+            Log.Warning("Critical socket error: {Exception}", ex);
             throw;
         }
         finally
@@ -75,6 +75,8 @@ public class MainServer : IAsyncDisposable
 
                 if (_commandFactory.GetCommand(cmdName) is not null and ICommand command)
                 {
+                    Log.Information("The \"{CommandName}\" command has been called.", command.GetType().FullName);
+
                     await command.ExecuteAsync(_sessionRegistry, session, args, ct).ConfigureAwait(false);
                 }
             }
@@ -86,7 +88,7 @@ public class MainServer : IAsyncDisposable
             if (session.Userkey is not null)
                 _sessionRegistry.Remove(session.Userkey);
 
-            Console.WriteLine("The client has been disconnected.");
+            Log.Information("The client has been disconnected.");
         }
     }
 

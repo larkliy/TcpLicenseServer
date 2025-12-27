@@ -1,6 +1,12 @@
 ﻿
+using Serilog;
 using TcpLicenseServer;
 using TcpLicenseServer.Data;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
 var commandFactory = new CommandFactory();
 var sessionRegistry = new SessionRegistry();
@@ -14,7 +20,7 @@ Console.CancelKeyPress += (s, e) =>
     e.Cancel = true;
     cts.Cancel();
 
-    Console.WriteLine("The server has stopped!");
+    Log.Information("You stopped the server by pressing CTRL + C.");
 };
 
 try
@@ -22,9 +28,13 @@ try
     await using var dbContext = new AppDbContext();
     await dbContext.Database.EnsureCreatedAsync();
 
+    Log.Information("The server is running!");
+
     await server.StartAsync(cts.Token);
+
 }
 finally
 {
     await server.DisposeAsync();
+    Log.CloseAndFlush();
 }
