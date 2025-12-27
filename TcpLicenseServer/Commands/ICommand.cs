@@ -4,5 +4,5 @@ namespace TcpLicenseServer.Commands;
 
 public interface ICommand
 {
-    ValueTask ExecuteAsync(ClientSession session, string[] args, CancellationToken ct);
+    ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct);
 }

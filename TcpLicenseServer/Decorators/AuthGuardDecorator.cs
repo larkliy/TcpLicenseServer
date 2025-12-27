@@ -5,7 +5,7 @@ namespace TcpLicenseServer.Decorators;
 
 public class AuthGuardDecorator(ICommand innerCommand) : ICommand
 {
-    public async ValueTask ExecuteAsync(ClientSession session, string[] args, CancellationToken ct)
+    public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
         if (!session.IsAuthenticated)
         {
@@ -13,6 +13,6 @@ public class AuthGuardDecorator(ICommand innerCommand) : ICommand
             return;
         }
 
-        await innerCommand.ExecuteAsync(session, args, ct);
+        await innerCommand.ExecuteAsync(sessionRegistry, session, args, ct);
     }
 }

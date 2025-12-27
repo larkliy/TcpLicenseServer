@@ -9,7 +9,9 @@ public class ClientSession(TcpClient client)
     public TcpClient Client { get; set; } = client;
     public NetworkStream Stream { get; set; } = client.GetStream();
     public bool IsAuthenticated { get; set; } = false;
-    public string? Username { get; set; }
+
+    public string? Userkey { get; set; }
+    public int UserId { get; set; }
     public string? Role { get; set; }
 
     public async ValueTask SendAsync(string message, CancellationToken cancellationToken)
@@ -18,4 +20,6 @@ public class ClientSession(TcpClient client)
 
         await Stream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
     }
+
+    public void Disconnect() => Client.Close();
 }

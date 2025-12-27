@@ -9,4 +9,5 @@ public class User
     public string? Hwid { get; set; }
 
     public DateTime CreatedAt { get; set; }
+    public ICollection<Config> Configs { get; set; } = new List<Config>();
 }

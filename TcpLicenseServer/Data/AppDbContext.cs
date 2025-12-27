@@ -6,11 +6,10 @@ namespace TcpLicenseServer.Data;
 public class AppDbContext : DbContext
 {
     public DbSet<User> Users { get; set; }
+    public DbSet<Config> Configs { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseSqlite("Data Source=licenseServer.db");
-    }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) 
+        => optionsBuilder.UseSqlite("Data Source=licenseServer.db");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -18,5 +17,11 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<User>().HasIndex(u => u.Key);
         modelBuilder.Entity<User>().HasIndex(u => u.Hwid);
+
+        modelBuilder.Entity<User>()
+            .HasMany(u => u.Configs)
+            .WithOne(c => c.User)
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

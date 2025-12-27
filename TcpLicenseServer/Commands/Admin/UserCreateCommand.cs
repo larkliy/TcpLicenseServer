@@ -6,7 +6,7 @@ namespace TcpLicenseServer.Commands.Admin;
 [AdminOnly]
 public class UserCreateCommand : ICommand
 {
-    public ValueTask ExecuteAsync(ClientSession session, string[] args, CancellationToken ct)
+    public ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
         throw new NotImplementedException();
     }

@@ -6,7 +6,10 @@ namespace TcpLicenseServer.Commands;
 
 public class LoginCommand : ICommand
 {
-    public async ValueTask ExecuteAsync(ClientSession session, string[] args, CancellationToken ct)
+    public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry,
+                                        ClientSession session,
+                                        string[] args,
+                                        CancellationToken ct)
     {
         if (!await ValidateLoginArgsAsync(session, args, ct)) return;
 
@@ -15,7 +18,7 @@ public class LoginCommand : ICommand
         string key = args[0];
         string hwid = args[1];
 
-        var user = await dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Key == key, ct).ConfigureAwait(false);
+        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Key == key, ct).ConfigureAwait(false);
 
         if (user == null)
         {
@@ -30,7 +33,8 @@ public class LoginCommand : ICommand
         }
         else
         {
-            await AuthenticateSessionAsync(session, user, ct);
+            user.Hwid ??= user.Hwid;
+            await AuthenticateSessionAsync(sessionRegistry, session, user, ct);
         }
 
         await dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
@@ -53,14 +57,24 @@ public class LoginCommand : ICommand
         return true;
     }
 
-    private static async Task AuthenticateSessionAsync(ClientSession session, User user, CancellationToken ct)
+    private static async Task AuthenticateSessionAsync(SessionRegistry sessionRegistry,
+                                                       ClientSession clientSession,
+                                                       User user,
+                                                       CancellationToken ct)
     {
-        session.IsAuthenticated = true;
-        session.Role = "Player";
-        session.Username = user.Key;
+        clientSession.UserId = user.Id;
+        clientSession.IsAuthenticated = true;
+        clientSession.Role = "Player";
+        clientSession.Userkey = user.Key;
 
-        user.Hwid ??= user.Hwid;
+        if (sessionRegistry.TryGet(clientSession.Userkey, out var existing))
+        {
+            await existing.SendAsync("ERROR: You were disconnected. This key was used elsewhere.", ct);
+            existing.Disconnect();
+        }
 
-        await session.SendAsync("SUCCESSFUL: You have successfully logged in.", ct);
+        sessionRegistry.Register(clientSession.Userkey, clientSession);
+
+        await clientSession.SendAsync("SUCCESSFUL: You have successfully logged in.", ct);
     }
 }

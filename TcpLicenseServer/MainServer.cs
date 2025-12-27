@@ -1,17 +1,30 @@
-﻿using System.Net.Sockets;
+﻿using Microsoft.Win32;
+using System.Net.Sockets;
 using System.Text;
 using TcpLicenseServer.Commands;
 using TcpLicenseServer.Models;
 
 namespace TcpLicenseServer;
 
-public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposable
+public class MainServer : IAsyncDisposable
 {
     private TcpListener? _listener;
+    private readonly CommandFactory _commandFactory;
+    private readonly SessionRegistry _sessionRegistry;
+    private readonly int _port;
+
+    public MainServer(SessionRegistry sessionRegistry,
+                      CommandFactory commandFactory,
+                      int port)
+    {
+        _sessionRegistry = sessionRegistry;
+        _commandFactory = commandFactory;
+        _port = port;
+    }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        _listener = TcpListener.Create(port);
+        _listener = TcpListener.Create(_port);
         _listener.Start();
 
         try
@@ -60,9 +73,9 @@ public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposa
 
                 string[] args = parts.Length > 1 ? parts[1..] : [];
 
-                if (commandFactory.GetCommand(cmdName) is not null and ICommand command)
+                if (_commandFactory.GetCommand(cmdName) is not null and ICommand command)
                 {
-                    await command.ExecuteAsync(session, args, ct).ConfigureAwait(false);
+                    await command.ExecuteAsync(_sessionRegistry, session, args, ct).ConfigureAwait(false);
                 }
             }
         }
@@ -70,6 +83,9 @@ public class MainServer(CommandFactory commandFactory, int port) : IAsyncDisposa
         catch (IOException) { }
         finally
         {
+            if (session.Userkey is not null)
+                _sessionRegistry.Remove(session.Userkey);
+
             Console.WriteLine("The client has been disconnected.");
         }
     }

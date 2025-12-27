@@ -3,8 +3,9 @@ using TcpLicenseServer;
 using TcpLicenseServer.Data;
 
 var commandFactory = new CommandFactory();
+var sessionRegistry = new SessionRegistry();
 
-var server = new MainServer(commandFactory, 8080);
+var server = new MainServer(sessionRegistry, commandFactory, 8080);
 
 using var cts = new CancellationTokenSource();
 
