@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Serilog;
+using System.Text.Json;
 using TcpLicenseServer.Attributes;
 using TcpLicenseServer.Data;
 using TcpLicenseServer.Models;
@@ -7,23 +8,26 @@ using TcpLicenseServer.Models;
 namespace TcpLicenseServer.Commands.Admin.User;
 
 [AdminOnly]
-public class UserSubscriptionDateUpdateCommand : ICommand
+public class UserInfoCommand : ICommand
 {
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
-        if (args.Length < 2)
+        if (args.Length < 1)
         {
             await session.SendAsync("ERROR: Too few arguments.", ct);
             return;
         }
 
         string userKey = args[0];
-        bool isSuccessPass = DateTime.TryParse(args[1], out var newSubscriptionDatetime);
 
         try
         {
             await using var dbContext = new AppDbContext();
-            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Key == userKey, ct).ConfigureAwait(false);
+
+            var user = await dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Key == userKey, ct)
+                .ConfigureAwait(false);
 
             if (user == null)
             {
@@ -31,14 +35,12 @@ public class UserSubscriptionDateUpdateCommand : ICommand
                 return;
             }
 
-            user.SubscriptionEndDate = isSuccessPass ? newSubscriptionDatetime : user.SubscriptionEndDate.AddDays(1);
-
-            await dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+            await session.SendAsync($"OK: {JsonSerializer.Serialize(user)}", ct);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error changing user SubscriptionDate.");
-            await session.SendAsync("ERROR: Internal server error during changing user SubscriptionDate.", ct);
+            Log.Error(ex, "Error retrieving user information.");
+            await session.SendAsync("ERROR: Internal error while retrieving user information.", ct);
         }
     }
 }

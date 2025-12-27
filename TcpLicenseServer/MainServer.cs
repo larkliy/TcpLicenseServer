@@ -75,7 +75,7 @@ public class MainServer : IAsyncDisposable
 
                 if (_commandFactory.GetCommand(cmdName) is not null and ICommand command)
                 {
-                    Log.Information("The \"{CommandName}\" command has been called.", command.GetType().FullName);
+                    Log.Information("The \"{CommandName}\" command has been called. With args: {args}", command.GetType().FullName, args);
 
                     await command.ExecuteAsync(_sessionRegistry, session, args, ct).ConfigureAwait(false);
                 }

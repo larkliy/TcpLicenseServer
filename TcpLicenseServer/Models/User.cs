@@ -7,6 +7,7 @@ public class User
     public required string Key { get; set; }
     public required string Role { get; set; }
     public string? Hwid { get; set; }
+    public bool IsBanned { get; set; }
 
     public DateTime CreatedAt { get; set; }
     public DateTime SubscriptionEndDate { get; set; }

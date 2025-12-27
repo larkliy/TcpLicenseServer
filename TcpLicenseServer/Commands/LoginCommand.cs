@@ -29,6 +29,12 @@ public class LoginCommand : ICommand
                 return;
             }
 
+            if (user.IsBanned)
+            {
+                await session.SendAsync("ERROR: User blocked.", ct);
+                return;
+            }
+
             if (hwid != user.Hwid && user.Hwid is not null)
             {
                 await session.SendAsync("ERROR: Hwid does not match.", ct);
@@ -88,6 +94,6 @@ public class LoginCommand : ICommand
 
         sessionRegistry.Register(clientSession.Userkey, clientSession);
 
-        await clientSession.SendAsync("SUCCESSFUL: You have successfully logged in.", ct);
+        await clientSession.SendAsync("SUCCESS: You have successfully logged in.", ct);
     }
 }

@@ -42,6 +42,7 @@ public class UserCreateCommand : ICommand
             {
                 Key = key,
                 Role = role,
+                IsBanned = false,
                 CreatedAt = DateTime.UtcNow,
                 SubscriptionEndDate = subscriptionEndDate,
                 Hwid = null
@@ -55,8 +56,8 @@ public class UserCreateCommand : ICommand
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to create user");
-            await session.SendAsync("Error: Internal server error while creating user.", ct);
+            Log.Error(ex, "Failed to create user.");
+            await session.SendAsync("ERROR: Internal server error while creating user.", ct);
         }
     }
 }
