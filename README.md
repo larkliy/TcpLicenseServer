@@ -103,7 +103,6 @@ Available only if the user has the `Admin` role.
 This server is currently a **prototype**. The following features are planned but not yet implemented:
 
 *   [ ] **Encryption**: Traffic is currently sent in plain text (No SSL/TLS).
-*   [ ] **Password Hashing**: Admin/User credentials or secrets might require better security.
 *   [ ] **Unit Tests**: Test coverage is pending.
 *   [ ] **Migrations**: EF Core migrations are not yet set up (relies on `EnsureCreated`).
 
