@@ -1,5 +1,8 @@
 ﻿using Serilog;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using TcpLicenseServer.Commands;
 using TcpLicenseServer.Models;
@@ -11,7 +14,10 @@ public class MainServer : IAsyncDisposable
     private TcpListener? _listener;
     private readonly CommandFactory _commandFactory;
     private readonly SessionRegistry _sessionRegistry;
+    private readonly X509Certificate2 _serverCertificate;
+    private readonly SslServerAuthenticationOptions _sslOptions;
     private readonly int _port;
+
 
     public MainServer(SessionRegistry sessionRegistry,
                       CommandFactory commandFactory,
@@ -20,6 +26,16 @@ public class MainServer : IAsyncDisposable
         _sessionRegistry = sessionRegistry;
         _commandFactory = commandFactory;
         _port = port;
+
+        _sslOptions = new SslServerAuthenticationOptions
+        {
+            ServerCertificate = _serverCertificate,
+            ClientCertificateRequired = false,
+            CertificateRevocationCheckMode = X509RevocationMode.Online,
+            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+        };
+
+        _serverCertificate = X509CertificateLoader.LoadPkcs12FromFile("C:\\server.pfx", "password123");
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -53,15 +69,26 @@ public class MainServer : IAsyncDisposable
 
     private async Task ProcessClientAsync(TcpClient client, CancellationToken ct)
     {
-        var session = new ClientSession(client);
-        using var reader = new StreamReader(session.Stream, Encoding.UTF8, leaveOpen: true);
-
-        using var _ = client;
-        client.NoDelay = true;
+        ClientSession? session = null;
+        SslStream? sslStream = null;
 
         try
         {
-            await session.SendAsync("WELCOME: Service v1.0. Type 'LOGIN admin secret123'.", ct);
+            client.NoDelay = true;
+
+            var networkStream = client.GetStream();
+            sslStream = new SslStream(networkStream, leaveInnerStreamOpen: false);
+
+            var handshakeCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, handshakeCts.Token);
+
+            await sslStream.AuthenticateAsServerAsync(_sslOptions, linkedCts.Token).ConfigureAwait(false);
+
+            session = new ClientSession(client, sslStream);
+
+            using var reader = new StreamReader(sslStream, Encoding.UTF8, leaveOpen: true);
+
+            await session.SendAsync("WELCOME: Service v1.0 (Secure).", ct);
 
             string? line;
             while ((line = await reader.ReadLineAsync(ct).ConfigureAwait(false)) != null)
@@ -83,10 +110,23 @@ public class MainServer : IAsyncDisposable
         }
         catch (OperationCanceledException) { }
         catch (IOException) { }
+        catch (AuthenticationException authEx)
+        {
+            Log.Warning("SSL Handshake failed: {Message}", authEx.Message);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Unexpected error in client processing");
+        }
         finally
         {
-            if (session.Userkey is not null)
+            if (session?.Userkey is not null)
                 _sessionRegistry.Remove(session.Userkey);
+
+            if (sslStream is not null)
+                await sslStream.DisposeAsync();
+            else
+                client.Dispose();
 
             Log.Information("The client has been disconnected.");
         }
@@ -95,6 +135,7 @@ public class MainServer : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _listener?.Stop();
+        _serverCertificate?.Dispose();
 
         await ValueTask.CompletedTask;
     }

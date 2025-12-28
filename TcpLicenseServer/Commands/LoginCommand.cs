@@ -18,10 +18,12 @@ public class LoginCommand : ICommand
 
         try
         {
-            await using var dbContext = new AppDbContext();
+            commandArgs.EnsureCount(2);
 
             string key = commandArgs.PopString();
             string hwid = commandArgs.PopString();
+
+            await using var dbContext = new AppDbContext();
 
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Key == key, ct).ConfigureAwait(false);
 
@@ -66,16 +68,6 @@ public class LoginCommand : ICommand
         if (session.IsAuthenticated)
         {
             await session.ReplyInfoAsync("Already logged in.", ct);
-            return false;
-        }
-
-        try
-        {
-            args.EnsureCount(2);
-        }
-        catch (ArgumentException)
-        {
-            await session.ReplyErrorAsync("Too few arguments for the command.", ct);
             return false;
         }
 

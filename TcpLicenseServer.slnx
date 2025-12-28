@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="TcpLicenseServer.Tests/TcpLicenseServer.Tests.csproj" Id="1e906eef-a4ed-4fb1-b96f-4241cc363cc9" />
   <Project Path="TcpLicenseServer/TcpLicenseServer.csproj" />
 </Solution>
