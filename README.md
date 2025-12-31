@@ -95,7 +95,7 @@ Available only if the user has the `Admin` role.
 
 ## 🚧 Current Status & Limitations
 
-This server is currently a **prototype**. The following features are planned but not yet implemented:
+This server is currently a **prototype**.
 
 **Pull requests and contributions are welcome!**
 
