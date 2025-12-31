@@ -7,6 +7,8 @@ namespace TcpLicenseServer.Commands.Config;
 
 public class ConfigCreateCommand : ICommand
 {
+    public Func<AppDbContext> ContextFactory { get; set; } = () => new AppDbContext();
+
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
         var commandArgs = new CommandArgs(args);
@@ -17,7 +19,7 @@ public class ConfigCreateCommand : ICommand
             string configName = commandArgs.PopString();
             string configValue = commandArgs.RemainingText;
 
-            await using var dbContext = new AppDbContext();
+            await using var dbContext = ContextFactory();
 
             var config = new Models.Config
             {

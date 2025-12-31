@@ -11,6 +11,8 @@ namespace TcpLicenseServer.Commands.Admin.User;
 [AdminOnly]
 public class UserInfoCommand : ICommand
 {
+    public Func<AppDbContext> ContextFactory { get; set; } = () => new AppDbContext();
+
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
         var commandArgs = new CommandArgs(args);
@@ -20,7 +22,7 @@ public class UserInfoCommand : ICommand
             commandArgs.EnsureCount(1);
             string userKey = commandArgs.PopString();
 
-            await using var dbContext = new AppDbContext();
+            await using var dbContext = ContextFactory();
 
             var user = await dbContext.Users
                 .AsNoTracking()

@@ -9,11 +9,13 @@ namespace TcpLicenseServer.Commands.Config;
 
 public class GetConfigsCommand : ICommand
 {
+    public Func<AppDbContext> ContextFactory { get; set; } = () => new AppDbContext();
+
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
         try
         {
-            await using var dbContext = new AppDbContext();
+            await using var dbContext = ContextFactory();
 
             var configs = await dbContext.Configs
                 .Where(c => c.UserId == session.UserId)

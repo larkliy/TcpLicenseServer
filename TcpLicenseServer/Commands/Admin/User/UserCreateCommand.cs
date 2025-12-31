@@ -10,6 +10,8 @@ namespace TcpLicenseServer.Commands.Admin.User;
 [AdminOnly]
 public class UserCreateCommand : ICommand
 {
+    public Func<AppDbContext> ContextFactory { get; set; } = () => new AppDbContext();
+
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] rawArgs, CancellationToken ct)
     {
         try
@@ -20,7 +22,7 @@ public class UserCreateCommand : ICommand
             string role = args.HasNext() ? args.PopString() : "User";
             DateTime subEnd = args.HasNext() ? args.PopDate() : DateTime.MaxValue;
 
-            await using var db = new AppDbContext();
+            await using var db = ContextFactory();
 
             bool exists = await db.Users.AnyAsync(u => u.Key == key, ct).ConfigureAwait(false);
             if (exists)

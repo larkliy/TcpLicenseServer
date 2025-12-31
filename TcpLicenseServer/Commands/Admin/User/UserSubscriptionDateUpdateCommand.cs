@@ -10,6 +10,8 @@ namespace TcpLicenseServer.Commands.Admin.User;
 [AdminOnly]
 public class UserSubscriptionDateUpdateCommand : ICommand
 {
+    public Func<AppDbContext> ContextFactory { get; set; } = () => new AppDbContext();
+
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
         var commandArgs = new CommandArgs(args);
@@ -20,7 +22,7 @@ public class UserSubscriptionDateUpdateCommand : ICommand
             string userKey = commandArgs.PopString();
             DateTime newSubscriptionDatetime = commandArgs.PopDate();
 
-            await using var dbContext = new AppDbContext();
+            await using var dbContext = ContextFactory();
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Key == userKey, ct).ConfigureAwait(false);
 
             if (user == null)

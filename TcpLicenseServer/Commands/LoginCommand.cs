@@ -8,6 +8,8 @@ namespace TcpLicenseServer.Commands;
 
 public class LoginCommand : ICommand
 {
+    public Func<AppDbContext> ContextFactory { get; set; } = () => new AppDbContext();
+
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry,
                                         ClientSession session,
                                         string[] args,
@@ -23,7 +25,7 @@ public class LoginCommand : ICommand
             string key = commandArgs.PopString();
             string hwid = commandArgs.PopString();
 
-            await using var dbContext = new AppDbContext();
+            await using var dbContext = ContextFactory();
 
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Key == key, ct).ConfigureAwait(false);
 

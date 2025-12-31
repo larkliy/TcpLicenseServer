@@ -10,6 +10,8 @@ namespace TcpLicenseServer.Commands.Admin.Config;
 [AdminOnly]
 public class GetAllConfigsCommand : ICommand
 {
+    public Func<AppDbContext> ContextFactory { get; set; } = () => new AppDbContext();
+
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
         var commandArgs = new CommandArgs(args);
@@ -21,7 +23,7 @@ public class GetAllConfigsCommand : ICommand
 
             if (pageNumber < 1) pageNumber = 1;
 
-            await using var dbContext = new AppDbContext();
+            await using var dbContext = ContextFactory();
 
             var configs = await dbContext.Configs
                 .AsNoTracking()

@@ -10,6 +10,8 @@ namespace TcpLicenseServer.Commands.Admin.User;
 [AdminOnly]
 public class GetAllUsersCommand : ICommand
 {
+    public Func<AppDbContext> ContextFactory { get; set; } = () => new AppDbContext();
+
     public async ValueTask ExecuteAsync(SessionRegistry sessionRegistry, ClientSession session, string[] args, CancellationToken ct)
     {
         var commandArgs = new CommandArgs(args);
@@ -21,7 +23,7 @@ public class GetAllUsersCommand : ICommand
 
             if (pageNumber < 1) pageNumber = 1;
 
-            await using var dbContext = new AppDbContext();
+            await using var dbContext = ContextFactory();
 
             var users = await dbContext.Users
                 .AsNoTracking()
