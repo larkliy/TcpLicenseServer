@@ -3,11 +3,6 @@
 ![Status](https://img.shields.io/badge/Status-Work_in_Progress-yellow)
 ![Version](https://img.shields.io/badge/Version-Alpha-red)
 
-> ⚠️ **DISCLAIMER: Work in Progress**
-> 
-> This project is currently in early development/alpha stage. It is intended for educational purposes or as a Proof of Concept (PoC).
-> **Do not use in a production environment.** Features, database schema, and protocol commands are subject to change without notice.
-
 A lightweight, high-performance TCP server designed for handling software licensing, user authentication, and remote configuration management. Built with **.NET** (C#), it utilizes a command pattern architecture, **SQLite** for data persistence, and **Serilog** for robust logging.
 
 ## 🚀 Features
@@ -101,10 +96,6 @@ Available only if the user has the `Admin` role.
 ## 🚧 Current Status & Limitations
 
 This server is currently a **prototype**. The following features are planned but not yet implemented:
-
-*   [ ] **Encryption**: Traffic is currently sent in plain text (No SSL/TLS).
-*   [ ] **Unit Tests**: Test coverage is pending.
-*   [ ] **Migrations**: EF Core migrations are not yet set up (relies on `EnsureCreated`).
 
 **Pull requests and contributions are welcome!**
 
